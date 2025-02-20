@@ -1,20 +1,34 @@
 export interface Player {
   id: number;
   name: string;
-  score: number;
-  totalThrows: number;
-  throwsHistory: number[];
-  doublesHit: number;
-  doubleThrows: number;
-  stats: {
+  overallStats: {
+    score: number;
+    throws: number;
     threeDartAvg: number;
     nineDartAvg: number;
     hundredPlus: number;
-    eightyFivePlus: number;
+    eightyPlus: number;
     oneFortyPlus: number;
     oneEighty: number;
+    doublesHit: number;
+    doubleThrows: number;
+  };
+  legStats: {
+    remainingScore: number;
+    score: number;
+    throws: number;
+    throwsHistory: number[];
+    threeDartAvg: number;
+    nineDartAvg: number;
+    hundredPlus: number;
+    eightyPlus: number;
+    oneFortyPlus: number;
+    oneEighty: number;
+    doublesHit: number;
+    doubleThrows: number;
   };
   legsWon: number;
+  setsWon: number;
 }
 export interface GameState {
   players: Player[];

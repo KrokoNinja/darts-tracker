@@ -5,12 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Button } from "./ui/button";
-import { Player } from "../../types";
 
 export default function FinishDialog({
   open,
   setOpen,
-  players,
   darts,
   setDarts,
   double,
@@ -19,12 +17,11 @@ export default function FinishDialog({
 }: {
   open: boolean;
   setOpen: (open: boolean) => void;
-  players: Player[];
   darts: number | null;
   setDarts: (darts: number) => void;
   double: number | null;
   setDouble: (double: number) => void;
-  handleFinishLeg: (score: number, darts: number, double: number) => void;
+  handleFinishLeg: (darts: number, double: number) => void;
 }) {
   const [page, setPage] = useState<number>(0);
   useEffect(() => {
@@ -47,7 +44,7 @@ export default function FinishDialog({
         darts !== null &&
         double !== null
       ) {
-        handleFinishLeg(players[0].score, darts, double);
+        handleFinishLeg(darts, double);
       } else if (e.key === "Enter" && page === 0 && darts !== null) {
         setPage(1);
       }
@@ -65,11 +62,11 @@ export default function FinishDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Great Finish!</DialogTitle>
+          <DialogTitle>Triple is funny, double makes the money!</DialogTitle>
         </DialogHeader>
         {page === 0 && (
           <div>
-            <p>How many darts did it take?</p>
+            <p>How many darts did you throw?</p>
             <div className="flex flex-row">
               <Input
                 type="radio"
@@ -178,12 +175,14 @@ export default function FinishDialog({
             <Button
               onClick={() => {
                 if (darts !== null && double !== null) {
-                  handleFinishLeg(players[0].score, darts, double);
+                  handleFinishLeg(darts, double);
+                  setPage(0);
                 }
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && darts !== null && double !== null) {
-                  handleFinishLeg(players[0].score, darts, double);
+                  handleFinishLeg(darts, double);
+                  setPage(0);
                 }
               }}
             >

@@ -17,53 +17,93 @@ import {
   TableCell,
 } from "@/components/ui/table";
 import FinishDialog from "@/components/FinishDialog";
+import PlayerCard from "@/components/PlayerCard";
+import ScoreInput from "@/components/ScoreInput";
 
 export default function Local501Game() {
-  const statLabels: Record<keyof Player["stats"], string> = {
+  const statLabels: Omit<
+    Record<keyof Player["legStats"], string>,
+    "throwsHistory"
+  > = {
+    remainingScore: "Remaining Score",
+    score: "Score",
+    throws: "Total Throws",
     threeDartAvg: "3-Dart Average",
-    nineDartAvg: "9-Dart Average",
+    nineDartAvg: "First 9 Average",
     hundredPlus: "100+ Scores",
-    eightyFivePlus: "85+ Scores",
+    eightyPlus: "80+ Scores",
     oneFortyPlus: "140+ Scores",
     oneEighty: "180s",
+    doublesHit: "Doubles Hit",
+    doubleThrows: "Doubles Throws",
   };
+
+  const BOGEY_NUMBERS = [159, 162, 163, 165, 166, 168, 169];
 
   const [players, setPlayers] = useState<Player[]>([
     {
       id: 1,
       name: "Player 1",
-      score: 501,
-      totalThrows: 0,
-      throwsHistory: [],
-      doublesHit: 0,
-      doubleThrows: 0,
-      stats: {
+      overallStats: {
+        score: 0,
+        throws: 0,
         threeDartAvg: 0,
         nineDartAvg: 0,
         hundredPlus: 0,
-        eightyFivePlus: 0,
+        eightyPlus: 0,
         oneFortyPlus: 0,
         oneEighty: 0,
+        doublesHit: 0,
+        doubleThrows: 0,
+      },
+      legStats: {
+        remainingScore: 501,
+        score: 0,
+        throws: 0,
+        throwsHistory: [],
+        threeDartAvg: 0,
+        nineDartAvg: 0,
+        eightyPlus: 0,
+        hundredPlus: 0,
+        oneFortyPlus: 0,
+        oneEighty: 0,
+        doublesHit: 0,
+        doubleThrows: 0,
       },
       legsWon: 0,
+      setsWon: 0,
     },
     {
       id: 2,
       name: "Player 2",
-      score: 501,
-      totalThrows: 0,
-      throwsHistory: [],
-      doublesHit: 0,
-      doubleThrows: 0,
-      stats: {
+      overallStats: {
+        score: 0,
+        throws: 0,
         threeDartAvg: 0,
         nineDartAvg: 0,
         hundredPlus: 0,
-        eightyFivePlus: 0,
+        eightyPlus: 0,
         oneFortyPlus: 0,
         oneEighty: 0,
+        doublesHit: 0,
+        doubleThrows: 0,
+      },
+      legStats: {
+        remainingScore: 501,
+        score: 0,
+        throws: 0,
+        throwsHistory: [],
+        threeDartAvg: 0,
+        nineDartAvg: 0,
+        eightyPlus: 0,
+        hundredPlus: 0,
+        oneFortyPlus: 0,
+        oneEighty: 0,
+        doublesHit: 0,
+        doubleThrows: 0,
       },
       legsWon: 0,
+      setsWon: 0,
     },
   ]);
   const [gameState, setGameState] = useState<GameState>({
@@ -71,36 +111,47 @@ export default function Local501Game() {
     currentPlayerIndex: 0,
     currentLeg: 1,
     currentSet: 1,
-    bestOfLegs: 1,
+    bestOfLegs: 3,
     bestOfSets: 1,
     isLegFinished: false,
     isGameFinished: false,
   });
 
   const [inputScore, setInputScore] = useState("");
+  const [score, setScore] = useState(0);
 
   const [darts, setDarts] = useState<number | null>(null);
   const [double, setDouble] = useState<number | null>(null);
   const [finishDialogOpen, setFinishDialogOpen] = useState(false);
   const handleSubmitThrow = async (score: number) => {
     try {
+      const isInFinishingArea =
+        gameState.players[gameState.currentPlayerIndex].legStats
+          .remainingScore < 170 &&
+        !BOGEY_NUMBERS.includes(
+          gameState.players[gameState.currentPlayerIndex].legStats
+            .remainingScore
+        );
+
       const newGameState = await submitThrow(gameState, score);
-      setGameState({ ...newGameState });
-      setPlayers(newGameState.players);
-      setInputScore(""); // Clear input after successful throw
       if (newGameState.isLegFinished) {
+        setGameState({ ...newGameState });
         setFinishDialogOpen(true);
+      } else if (isInFinishingArea) {
+        setFinishDialogOpen(true);
+      } else {
+        setGameState({ ...newGameState });
+        setPlayers(newGameState.players);
+        setInputScore(""); // Clear input after successful throw
+        setDarts(null);
+        setDouble(null);
       }
     } catch (error) {
       console.error("Error submitting throw:", error);
     }
   };
 
-  const handleFinishLeg = async (
-    score: number,
-    darts: number,
-    double: number
-  ) => {
+  const handleFinishLeg = async (darts: number, double: number) => {
     setDarts(darts);
     setDouble(double);
     setFinishDialogOpen(false);
@@ -117,11 +168,10 @@ export default function Local501Game() {
   }, [gameState]);
 
   return (
-    <div className="p-4">
+    <div>
       <FinishDialog
         open={finishDialogOpen}
         setOpen={setFinishDialogOpen}
-        players={players}
         darts={darts}
         setDarts={setDarts}
         double={double}
@@ -129,67 +179,23 @@ export default function Local501Game() {
         handleFinishLeg={handleFinishLeg}
       />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {players.map((player, index) => (
-          <Card
+        {players.map((player: Player, index: number) => (
+          <PlayerCard
+            player={player}
+            gameState={gameState}
+            index={index}
             key={index}
-            className={`border-2 ${
-              gameState.currentPlayerIndex === index
-                ? "border-green-500"
-                : "border-gray-700"
-            }`}
-          >
-            <CardHeader>
-              <CardTitle className="text-2xl">{player.name}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-5xl font-bold mb-4">{player.score}</div>
-              <div className="text-xl mb-2">
-                Average: {player.stats.threeDartAvg}
-              </div>
-              <div className="text-xl">
-                Last Score:{" "}
-                {player.throwsHistory.length > 0
-                  ? player.throwsHistory[player.throwsHistory.length - 1]
-                  : "N/A"}
-              </div>
-            </CardContent>
-          </Card>
+          />
         ))}
       </div>
-      <div className="mt-8">
-        <h2 className="text-2xl mb-4">Enter Score</h2>
-        <div className="flex gap-4 mb-4">
-          <Input
-            type="number"
-            value={inputScore}
-            onChange={(e) => setInputScore(e.target.value)}
-            placeholder="Enter score (0-180)"
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && inputScore) {
-                handleSubmitThrow(Number(inputScore));
-              } else if (e.key === "Enter" && !inputScore) {
-                handleSubmitThrow(0);
-              }
-            }}
-            disabled={gameState.isGameFinished}
-          />
-          <Button onClick={() => handleSubmitThrow(Number(inputScore))}>
-            Submit
-          </Button>
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          {[26, 41, 45, 60, 81, 85, 100, 120, 140].map((score) => (
-            <Button
-              key={score}
-              onClick={() => handleSubmitThrow(score)}
-              variant="outline"
-              disabled={gameState.isGameFinished}
-            >
-              {score}
-            </Button>
-          ))}
-        </div>
-      </div>
+      <ScoreInput
+        inputScore={inputScore}
+        setInputScore={setInputScore}
+        score={score}
+        setScore={setScore}
+        handleSubmitThrow={handleSubmitThrow}
+        gameState={gameState}
+      />
       <div className="mt-4">
         <Table>
           <TableHeader>
@@ -201,41 +207,62 @@ export default function Local501Game() {
           </TableHeader>
           <TableBody>
             <TableRow>
-              <TableCell>Total Throws</TableCell>
-              <TableCell>{players[0].totalThrows}</TableCell>
-              <TableCell>{players[1].totalThrows}</TableCell>
+              <TableCell>Round Throws</TableCell>
+              <TableCell>{players[0].legStats.throws}</TableCell>
+              <TableCell>{players[1].legStats.throws}</TableCell>
             </TableRow>
-            {Object.keys(players[0].stats).map((stat) => (
-              <TableRow key={stat}>
-                <TableCell>
-                  {statLabels[stat as keyof Player["stats"]]}
-                </TableCell>
-                <TableCell>
-                  {players[0].stats[stat as keyof Player["stats"]]}
-                </TableCell>
-                <TableCell>
-                  {players[1].stats[stat as keyof Player["stats"]]}
-                </TableCell>
-              </TableRow>
-            ))}
+            {Object.keys(players[0].legStats)
+              .filter(
+                (stat) =>
+                  stat !== "throwsHistory" &&
+                  stat !== "remainingScore" &&
+                  stat !== "score" &&
+                  stat !== "doublesHit" &&
+                  stat !== "doubleThrows"
+              )
+              .map((stat) => (
+                <TableRow key={stat}>
+                  <TableCell>
+                    {statLabels[stat as keyof typeof statLabels]}
+                  </TableCell>
+                  <TableCell>
+                    {
+                      players[0].overallStats[
+                        stat as keyof Player["overallStats"]
+                      ]
+                    }
+                  </TableCell>
+                  <TableCell>
+                    {
+                      players[1].overallStats[
+                        stat as keyof Player["overallStats"]
+                      ]
+                    }
+                  </TableCell>
+                </TableRow>
+              ))}
             <TableRow>
               <TableCell>Doubles</TableCell>
               <TableCell>
-                {players[0].doublesHit}/{players[0].doubleThrows} (
-                {players[0].doubleThrows === 0
+                {players[0].overallStats.doublesHit}/
+                {players[0].overallStats.doubleThrows} (
+                {players[0].overallStats.doubleThrows === 0
                   ? "0.00"
                   : (
-                      (players[0].doublesHit / players[0].doubleThrows) *
+                      (players[0].overallStats.doublesHit /
+                        players[0].overallStats.doubleThrows) *
                       100
                     ).toFixed(2)}
                 %)
               </TableCell>
               <TableCell>
-                {players[1].doublesHit}/{players[1].doubleThrows} (
-                {players[1].doubleThrows === 0
+                {players[1].overallStats.doublesHit}/
+                {players[1].overallStats.doubleThrows} (
+                {players[1].overallStats.doubleThrows === 0
                   ? "0.00"
                   : (
-                      (players[1].doublesHit / players[1].doubleThrows) *
+                      (players[1].overallStats.doublesHit /
+                        players[1].overallStats.doubleThrows) *
                       100
                     ).toFixed(2)}
                 %)
